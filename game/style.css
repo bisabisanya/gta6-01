@@ -1,0 +1,24 @@
+/* SOLMAR — page chrome around the game canvas. The game itself paints everything. */
+* { box-sizing: border-box; }
+html, body { margin: 0; padding: 0; background: #14101c; }
+body {
+  font-family: system-ui, -apple-system, "Segoe UI", sans-serif;
+  color: #f2ede4;
+  min-height: 100vh;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+}
+#stage { width: min(1280px, 100vw); }
+#game {
+  display: block;
+  width: 100%;
+  height: auto;
+  background: #ffd9a0;
+  cursor: crosshair;
+}
+#status {
+  margin: 8px 4px 0;
+  font-size: 14px;
+  color: #b9b3a4;
+}
