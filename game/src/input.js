@@ -1,54 +1,55 @@
-// Keyboard + mouse input. Keys are tracked by code; actions are edge-triggered and consumed
-// once per frame so a single press never fires twice.
-export const ACTION_CONFIRM = 1;
-export const ACTION_PAUSE = 2;
-export const ACTION_ENTER_CAR = 4;
-export const ACTION_PUNCH = 8;
-export const ACTION_MUTE = 16;
-export const ACTION_SAVE = 32;
+// Keyboard + mouse. Keys are tracked by code; actions are edge-triggered and
+// consumed once per frame, so one press never fires twice.
 
-const CONFIRM_KEYS = ['Enter', 'Space'];
-const PAUSE_KEYS = ['Escape', 'KeyP'];
+export const ACT_CONFIRM = 1;
+export const ACT_PAUSE = 2;
+export const ACT_CAR = 4;
+export const ACT_PUNCH = 8;
+export const ACT_MUTE = 16;
+export const ACT_SAVE = 32;
 
-export function createInput(canvas) {
+const CONFIRM = ['Enter', 'Space'];
+const PAUSE = ['Escape', 'KeyP'];
+
+export function makeInput(canvas) {
   const keys = new Set();
   let actions = 0;
   const mouse = { x: 0, y: 0, down: false, clicked: false };
 
-  function onKeyDown(event) {
+  function keyDown(event) {
     if (['ArrowUp', 'ArrowDown', 'ArrowLeft', 'ArrowRight', 'Space'].includes(event.code)) event.preventDefault();
     if (!event.repeat) {
-      if (CONFIRM_KEYS.includes(event.code)) actions |= ACTION_CONFIRM;
-      if (PAUSE_KEYS.includes(event.code)) actions |= ACTION_PAUSE;
-      if (event.code === 'KeyE') actions |= ACTION_ENTER_CAR;
-      if (event.code === 'KeyF') actions |= ACTION_PUNCH;
-      if (event.code === 'KeyM') actions |= ACTION_MUTE;
-      if (event.code === 'KeyG') actions |= ACTION_SAVE;
+      if (CONFIRM.includes(event.code)) actions |= ACT_CONFIRM;
+      if (PAUSE.includes(event.code)) actions |= ACT_PAUSE;
+      if (event.code === 'KeyE') actions |= ACT_CAR;
+      if (event.code === 'KeyF') actions |= ACT_PUNCH;
+      if (event.code === 'KeyM') actions |= ACT_MUTE;
+      if (event.code === 'KeyG') actions |= ACT_SAVE;
     }
     keys.add(event.code);
   }
-  function onKeyUp(event) {
+  function keyUp(event) {
     keys.delete(event.code);
   }
-  function onMouseMove(event) {
+  function mouseMove(event) {
     const rect = canvas.getBoundingClientRect();
     mouse.x = (event.clientX - rect.left) * (canvas.width / rect.width);
     mouse.y = (event.clientY - rect.top) * (canvas.height / rect.height);
   }
-  function onMouseDown(event) {
-    onMouseMove(event);
+  function mouseDown(event) {
+    mouseMove(event);
     mouse.down = true;
     mouse.clicked = true;
   }
-  function onMouseUp() {
+  function mouseUp() {
     mouse.down = false;
   }
 
-  window.addEventListener('keydown', onKeyDown);
-  window.addEventListener('keyup', onKeyUp);
-  canvas.addEventListener('mousemove', onMouseMove);
-  canvas.addEventListener('mousedown', onMouseDown);
-  window.addEventListener('mouseup', onMouseUp);
+  window.addEventListener('keydown', keyDown);
+  window.addEventListener('keyup', keyUp);
+  canvas.addEventListener('mousemove', mouseMove);
+  canvas.addEventListener('mousedown', mouseDown);
+  window.addEventListener('mouseup', mouseUp);
 
   return {
     mouse,
@@ -76,7 +77,8 @@ export function createInput(canvas) {
       return {
         throttle: (keys.has('KeyW') || keys.has('ArrowUp')) ? 1 : 0,
         brake: (keys.has('KeyS') || keys.has('ArrowDown')) ? 1 : 0,
-        steer: ((keys.has('KeyA') || keys.has('ArrowLeft')) ? -1 : 0) + ((keys.has('KeyD') || keys.has('ArrowRight')) ? 1 : 0),
+        steer: ((keys.has('KeyA') || keys.has('ArrowLeft')) ? -1 : 0)
+          + ((keys.has('KeyD') || keys.has('ArrowRight')) ? 1 : 0),
         handbrake: keys.has('Space') ? 1 : 0,
       };
     },

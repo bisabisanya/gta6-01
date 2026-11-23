@@ -1,8 +1,10 @@
-// Save / load through localStorage: cash, mission progress, position, health and ammo.
-// A save never blocks play — storage can be off and the game just keeps going.
+// Save and load through localStorage: cash, mission progress, position,
+// health and ammo. A save never blocks play — if storage is off, the game
+// just keeps going.
+
 import { SAVE_KEY } from './config.js';
 
-export function readSave() {
+export function loadSave() {
   try {
     const raw = window.localStorage.getItem(SAVE_KEY);
     if (!raw) return null;
@@ -14,7 +16,7 @@ export function readSave() {
   }
 }
 
-export function writeSave(state) {
+export function storeSave(state) {
   try {
     const { player, missions } = state;
     window.localStorage.setItem(SAVE_KEY, JSON.stringify({
@@ -35,7 +37,7 @@ export function writeSave(state) {
   }
 }
 
-export function applySave(state, save) {
+export function restoreSave(state, save) {
   const { player, missions } = state;
   player.cash = save.cash;
   player.missionsDone = save.missionsDone || 0;
@@ -55,10 +57,10 @@ export function applySave(state, save) {
   }
 }
 
-export function clearSave() {
+export function wipeSave() {
   try {
     window.localStorage.removeItem(SAVE_KEY);
   } catch {
-    // Ignore: nothing saved, nothing to clear.
+    // Nothing saved, nothing to clear.
   }
 }

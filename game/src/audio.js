@@ -1,6 +1,8 @@
-// Synthesized sound: every effect is built with WebAudio oscillators and filtered noise, so
-// the game ships no audio files. Music is a tiny looping bassline + hats sequencer.
-export function createAudio() {
+// Synthesized sound: every effect is built from WebAudio oscillators and
+// filtered noise, so the game ships no audio files. Music is a small looping
+// bassline with hats.
+
+export function makeAudio() {
   let ctx = null;
   let muted = false;
   let musicTimer = null;
@@ -33,7 +35,7 @@ export function createAudio() {
     osc.stop(c.currentTime + dur);
   }
 
-  function noise(dur, vol, filterFreq) {
+  function noise(dur, vol, cutoff) {
     if (muted) return;
     const c = ensure();
     if (!c) return;
@@ -45,7 +47,7 @@ export function createAudio() {
     src.buffer = buffer;
     const filter = c.createBiquadFilter();
     filter.type = 'lowpass';
-    filter.frequency.value = filterFreq;
+    filter.frequency.value = cutoff;
     const gain = c.createGain();
     gain.gain.value = vol;
     src.connect(filter).connect(gain).connect(c.destination);

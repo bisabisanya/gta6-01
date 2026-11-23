@@ -1,144 +1,162 @@
-// City generation for Solmar: a road grid, seeded blocks of buildings, a park, a beach and
-// the ocean, plus the story landmarks (garage, bank, hospital, hideout, hotel). All geometry is
-// deterministic from the seed. Collision is axis-aligned rectangles (buildings) and the ocean.
-import { WORLD, ROADS_X, ROADS_Y, ROAD_WIDTH, BEACH_X, OCEAN_X } from './config.js';
-import { createRandom } from './random.js';
+// The city of Solmar, grown from a seed: a road grid, blocks of buildings, a
+// park and a plaza left open, a beach and the ocean to the east, and the story
+// landmarks (garage, bank, hospital, hideout, hotel, pier). Collision is
+// rectangles for buildings and a hard edge at the water.
 
-const PALETTE = [
+import {
+  WORLD_W, WORLD_H, ROAD_W, ROAD_LINES_X, ROAD_LINES_Y, SAND_X, SEA_X,
+} from './config.js';
+import { makeRng } from './rng.js';
+
+const WALLS = [
   '#e8a34c', '#d97b4f', '#c96f8e', '#7fb3a8', '#8fa8c9', '#e0c06a',
   '#b98a5e', '#9db98a', '#c9a0c9', '#e07856', '#6fa8a0', '#d9b48f',
 ];
-const ROOFS = ['#5d4a68', '#3f5a6e', '#6e4a3f', '#4a6e52', '#715a7a', '#556b7d'];
+const ROOFTOPS = ['#5d4a68', '#3f5a6e', '#6e4a3f', '#4a6e52', '#715a7a', '#556b7d'];
+const NEON_SIGNS = ['#ff5da2', '#37e0c8', '#ffd23f', '#7aa8ff'];
 
 function onRoad(x, y) {
-  for (const rx of ROADS_X) if (Math.abs(x - rx) < ROAD_WIDTH / 2) return true;
-  for (const ry of ROADS_Y) if (Math.abs(y - ry) < ROAD_WIDTH / 2) return true;
+  for (const rx of ROAD_LINES_X) if (Math.abs(x - rx) < ROAD_W / 2) return true;
+  for (const ry of ROAD_LINES_Y) if (Math.abs(y - ry) < ROAD_W / 2) return true;
   return false;
 }
 
-function blockRects() {
-  const rects = [];
-  for (let i = 0; i < ROADS_X.length; i += 1) {
-    for (let j = 0; j < ROADS_Y.length; j += 1) {
-      const x0 = ROADS_X[i] + ROAD_WIDTH / 2 + 8;
-      const y0 = ROADS_Y[j] + ROAD_WIDTH / 2 + 8;
-      const x1 = (ROADS_X[i + 1] ?? WORLD.width) - ROAD_WIDTH / 2 - 8;
-      const y1 = (ROADS_Y[j + 1] ?? WORLD.height) - ROAD_WIDTH / 2 - 8;
-      if (x1 - x0 > 60 && y1 - y0 > 60) rects.push({ x0, y0, x1, y1, i, j });
+// The open rectangles between the roads; buildings are placed inside them.
+function cityBlocks() {
+  const out = [];
+  for (let i = 0; i < ROAD_LINES_X.length; i += 1) {
+    for (let j = 0; j < ROAD_LINES_Y.length; j += 1) {
+      const x0 = ROAD_LINES_X[i] + ROAD_W / 2 + 8;
+      const y0 = ROAD_LINES_Y[j] + ROAD_W / 2 + 8;
+      const x1 = (ROAD_LINES_X[i + 1] ?? WORLD_W) - ROAD_W / 2 - 8;
+      const y1 = (ROAD_LINES_Y[j + 1] ?? WORLD_H) - ROAD_W / 2 - 8;
+      if (x1 - x0 > 60 && y1 - y0 > 60) out.push({ x0, y0, x1, y1, col: i, row: j });
     }
   }
-  return rects;
+  return out;
 }
 
-export function createWorld(seed) {
-  const rng = createRandom(seed);
+export function buildCity(seed) {
+  const rng = makeRng(seed);
   const buildings = [];
   const palms = [];
   const lamps = [];
   const benches = [];
-  const blocks = blockRects();
+  const blocks = cityBlocks();
 
-  // The park block (between roads 1500/2100 x 1300/1800) and the plaza stay open.
-  const parkBlock = blocks.find((b) => b.i === 2 && b.j === 2);
-  const plazaBlock = blocks.find((b) => b.i === 3 && b.j === 1);
+  // Palm Court Park and the plaza stay open — no buildings there.
+  const park = blocks.find((b) => b.col === 2 && b.row === 2);
+  const plaza = blocks.find((b) => b.col === 3 && b.row === 1);
 
   for (const block of blocks) {
-    if (block === parkBlock || block === plazaBlock) continue;
-    // Subdivide the block into a 2x2 grid of lots; most lots get one building, so the
-    // city reads as dense blocks rather than empty lawns.
+    if (block === park || block === plaza) continue;
     const bw = block.x1 - block.x0;
     const bh = block.y1 - block.y0;
+    // Four lots per block, most holding one building each.
     for (let gx = 0; gx < 2; gx += 1) {
       for (let gy = 0; gy < 2; gy += 1) {
-        if (!rng.chance(0.82)) continue;
-        const lotX0 = block.x0 + (gx * bw) / 2 + 8;
-        const lotY0 = block.y0 + (gy * bh) / 2 + 8;
-        const lotX1 = block.x0 + ((gx + 1) * bw) / 2 - 8;
-        const lotY1 = block.y0 + ((gy + 1) * bh) / 2 - 8;
-        const w = rng.range(70, Math.max(72, lotX1 - lotX0));
-        const h = rng.range(60, Math.max(62, lotY1 - lotY0));
-        const x = rng.range(lotX0, Math.max(lotX0, lotX1 - w));
-        const y = rng.range(lotY0, Math.max(lotY0, lotY1 - h));
+        if (!rng.maybe(0.82)) continue;
+        const lx0 = block.x0 + (gx * bw) / 2 + 8;
+        const ly0 = block.y0 + (gy * bh) / 2 + 8;
+        const lx1 = block.x0 + ((gx + 1) * bw) / 2 - 8;
+        const ly1 = block.y0 + ((gy + 1) * bh) / 2 - 8;
+        const w = rng.between(70, Math.max(72, lx1 - lx0));
+        const h = rng.between(60, Math.max(62, ly1 - ly0));
         buildings.push({
-          x, y, w, h,
-          height: rng.int(14, 46),
-          color: rng.pick(PALETTE),
-          roof: rng.pick(ROOFS),
-          neon: rng.chance(0.35) ? rng.pick(['#ff5da2', '#37e0c8', '#ffd23f', '#7aa8ff']) : null,
-          sign: rng.chance(0.3),
+          x: rng.between(lx0, Math.max(lx0, lx1 - w)),
+          y: rng.between(ly0, Math.max(ly0, ly1 - h)),
+          w, h,
+          tall: rng.whole(14, 46),
+          color: rng.from(WALLS),
+          roof: rng.from(ROOFTOPS),
+          neon: rng.maybe(0.35) ? rng.from(NEON_SIGNS) : null,
+          hasSign: rng.maybe(0.3),
         });
       }
     }
   }
 
-  // Palms line the beach and the park; lamps line every road.
-  for (let y = 120; y < WORLD.height; y += 130) palms.push({ x: BEACH_X - 26 + rng.range(-8, 8), y });
-  for (let y = 200; y < WORLD.height; y += 260) palms.push({ x: parkBlock.x0 + 40, y: parkBlock.y0 + 60 });
-  for (let y = 260; y < WORLD.height; y += 260) palms.push({ x: parkBlock.x1 - 40, y: parkBlock.y1 - 60 });
-  for (const rx of ROADS_X) for (let y = 120; y < WORLD.height; y += 300) lamps.push({ x: rx + ROAD_WIDTH / 2 + 6, y });
-  for (const ry of ROADS_Y) for (let x = 120; x < WORLD.width; x += 300) lamps.push({ x, y: ry + ROAD_WIDTH / 2 + 6 });
-  for (let i = 0; i < 10; i += 1) benches.push({ x: parkBlock.x0 + 60 + i * 46, y: parkBlock.y0 + 130 });
+  // Palms along the sand and around the park; lamps along every road.
+  for (let y = 120; y < WORLD_H; y += 130) palms.push({ x: SAND_X - 26 + rng.between(-8, 8), y });
+  for (let y = 200; y < WORLD_H; y += 260) palms.push({ x: park.x0 + 40, y: park.y0 + 60 });
+  for (let y = 260; y < WORLD_H; y += 260) palms.push({ x: park.x1 - 40, y: park.y1 - 60 });
+  for (const rx of ROAD_LINES_X) {
+    for (let y = 120; y < WORLD_H; y += 300) lamps.push({ x: rx + ROAD_W / 2 + 6, y });
+  }
+  for (const ry of ROAD_LINES_Y) {
+    for (let x = 120; x < WORLD_W; x += 300) lamps.push({ x, y: ry + ROAD_W / 2 + 6 });
+  }
+  for (let i = 0; i < 10; i += 1) benches.push({ x: park.x0 + 60 + i * 46, y: park.y0 + 130 });
 
-  const landmarks = {
-    garage: { x: 900, y: 800, label: "Eddie's Garage" },
-    bank: { x: 2100, y: 800, label: 'Solmar National Bank' },
-    hospital: { x: 900, y: 1800, label: 'Solmar General' },
-    hideout: { x: 1500, y: 2300, label: 'Mara\u2019s Hideout' },
-    hotel: { x: 2700, y: 1300, label: 'Palmetto Hotel' },
-    pier: { x: 3400, y: 1300, label: 'Sunset Pier' },
-    park: { x: (parkBlock.x0 + parkBlock.x1) / 2, y: (parkBlock.y0 + parkBlock.y1) / 2, label: 'Palm Court Park' },
+  const spots = {
+    garage: { x: 900, y: 800, name: "Eddie's Garage" },
+    bank: { x: 2100, y: 800, name: 'Solmar National Bank' },
+    hospital: { x: 900, y: 1800, name: 'Solmar General' },
+    hideout: { x: 1500, y: 2300, name: 'Mara’s Hideout' },
+    hotel: { x: 2700, y: 1300, name: 'Palmetto Hotel' },
+    pier: { x: 3400, y: 1300, name: 'Sunset Pier' },
+    park: { x: (park.x0 + park.x1) / 2, y: (park.y0 + park.y1) / 2, name: 'Palm Court Park' },
   };
 
-  function collides(x, y, r) {
-    if (x < r || y < r || x > OCEAN_X - r || y > WORLD.height - r) return true;
-    if (x > OCEAN_X - 40) return true;
+  function blocked(x, y, r) {
+    if (x < r || y < r || x > SEA_X - r || y > WORLD_H - r) return true;
+    if (x > SEA_X - 40) return true;
     for (const b of buildings) {
       if (x + r > b.x && x - r < b.x + b.w && y + r > b.y && y - r < b.y + b.h) return true;
     }
     return false;
   }
 
-  function collidesCar(x, y, halfLen, halfWid, angle) {
-    // Cheap circle approximation: sample the car's corners and centre.
+  // A car is a box: check its centre and corners against the same test.
+  function blockedForCar(x, y, halfLen, halfWid, angle) {
     const cos = Math.cos(angle);
     const sin = Math.sin(angle);
     const pts = [[0, 0], [halfLen, halfWid], [halfLen, -halfWid], [-halfLen, halfWid], [-halfLen, -halfWid]];
     for (const [px, py] of pts) {
-      const wx = x + px * cos - py * sin;
-      const wy = y + px * sin + py * cos;
-      if (collides(wx, wy, 8)) return true;
+      if (blocked(x + px * cos - py * sin, y + px * sin + py * cos, 8)) return true;
     }
     return false;
   }
 
-  function nearestRoadPoint(x, y) {
+  function closestRoad(x, y) {
     let best = null;
     let bestD = Infinity;
-    for (const rx of ROADS_X) {
+    for (const rx of ROAD_LINES_X) {
       const d = Math.abs(x - rx);
-      if (d < bestD) { bestD = d; best = { x: rx, y, vertical: true }; }
+      if (d < bestD) { bestD = d; best = { x: rx, y, along: true }; }
     }
-    for (const ry of ROADS_Y) {
+    for (const ry of ROAD_LINES_Y) {
       const d = Math.abs(y - ry);
-      if (d < bestD) { bestD = d; best = { x, y: ry, vertical: false }; }
+      if (d < bestD) { bestD = d; best = { x, y: ry, along: false }; }
     }
     return best;
   }
 
-  function randomRoadPoint() {
-    if (rng.chance(0.5)) {
-      return { x: rng.pick(ROADS_X) + rng.range(-ROAD_WIDTH / 4, ROAD_WIDTH / 4), y: rng.range(80, WORLD.height - 80), vertical: true };
+  function randomRoadSpot() {
+    if (rng.maybe(0.5)) {
+      return {
+        x: rng.from(ROAD_LINES_X) + rng.between(-ROAD_W / 4, ROAD_W / 4),
+        y: rng.between(80, WORLD_H - 80),
+        along: true,
+      };
     }
-    return { x: rng.range(80, BEACH_X - 80), y: rng.pick(ROADS_Y) + rng.range(-ROAD_WIDTH / 4, ROAD_WIDTH / 4), vertical: false };
+    return {
+      x: rng.between(80, SAND_X - 80),
+      y: rng.from(ROAD_LINES_Y) + rng.between(-ROAD_W / 4, ROAD_W / 4),
+      along: false,
+    };
   }
 
-  function randomSidewalkPoint() {
-    const p = randomRoadPoint();
-    return { x: p.x + rng.range(-ROAD_WIDTH / 2 - 30, ROAD_WIDTH / 2 + 30), y: p.y + rng.range(-ROAD_WIDTH / 2 - 30, ROAD_WIDTH / 2 + 30) };
+  function randomWalkSpot() {
+    const p = randomRoadSpot();
+    return {
+      x: p.x + rng.between(-ROAD_W / 2 - 30, ROAD_W / 2 + 30),
+      y: p.y + rng.between(-ROAD_W / 2 - 30, ROAD_W / 2 + 30),
+    };
   }
 
   return {
-    seed, buildings, palms, lamps, benches, landmarks, parkBlock, plazaBlock,
-    onRoad, collides, collidesCar, nearestRoadPoint, randomRoadPoint, randomSidewalkPoint,
+    seed, buildings, palms, lamps, benches, spots, park, plaza,
+    onRoad, blocked, blockedForCar, closestRoad, randomRoadSpot, randomWalkSpot,
   };
 }

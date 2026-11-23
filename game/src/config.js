@@ -1,78 +1,85 @@
-// SOLMAR — a sun-soaked coastal open-world crime game (original fiction, no licensed assets).
-// Shared constants: world size, roads, physics, wanted rules, screens, storage keys.
+// SOLMAR — a sun-soaked coastal open-world crime game, original fiction.
+// One place for every number the game tunes by: the city grid, the cars, the
+// player, the wanted system, the money and the screens. Nothing here is a
+// licensed asset; every name, place and face in the game is invented.
 
 export const STEP = 1 / 60;
-export const WORLD = { width: 3600, height: 2600 };
-export const ROAD_WIDTH = 116;
-export const SIDEWALK = 26;
-// Road centre lines (vertical x, horizontal y). Blocks sit between them.
-export const ROADS_X = [300, 900, 1500, 2100, 2700, 3300];
-export const ROADS_Y = [300, 800, 1300, 1800, 2300];
-// East of the last road: sand, then the ocean.
-export const BEACH_X = 3360;
-export const OCEAN_X = 3480;
 
-export const VIEW = { width: 1280, height: 720 };
-export const MINIMAP = { size: 196, margin: 14 };
+// The city is 3600 by 2600 world units. Roads form a grid; east of the last
+// road is sand, then the ocean. The camera shows a 1280x720 slice of it.
+export const WORLD_W = 3600;
+export const WORLD_H = 2600;
+export const ROAD_W = 116;
+export const CURB = 26;
+export const ROAD_LINES_X = [300, 900, 1500, 2100, 2700, 3300];
+export const ROAD_LINES_Y = [300, 800, 1300, 1800, 2300];
+export const SAND_X = 3360;
+export const SEA_X = 3480;
 
-export const PLAYER = {
+export const VIEW_W = 1280;
+export const VIEW_H = 720;
+export const MAP_SIZE = 196;
+export const MAP_GAP = 14;
+
+// Mara Reyes on foot.
+export const ON_FOOT = {
   radius: 14,
-  walkSpeed: 170,
-  runSpeed: 265,
+  walk: 170,
+  run: 265,
   health: 100,
-  punchDamage: 12,
-  punchRange: 34,
-  punchCooldown: 0.38,
-  pistolDamage: 34,
-  pistolRange: 420,
-  pistolCooldown: 0.22,
-  ammoStart: 24,
-  ammoMax: 120,
+  punchHurt: 12,
+  punchReach: 34,
+  punchWait: 0.38,
+  shotHurt: 34,
+  shotReach: 420,
+  shotWait: 0.22,
+  ammo0: 24,
+  ammoTop: 120,
 };
 
-export const CAR = {
-  length: 54,
-  width: 26,
+// Any car she drives: arcade handling, drift on the handbrake.
+export const CAR_TUNE = {
+  len: 54,
+  wid: 26,
   accel: 420,
   brake: 620,
-  reverseAccel: 260,
-  maxSpeed: 560,
-  maxReverse: 180,
+  backAccel: 260,
+  topSpeed: 560,
+  topBack: 180,
   steer: 2.6,
-  grip: 3.4,
   drag: 0.55,
 };
 
-// Wanted: stars 0..5. Heat rises on crimes, decays while clean.
-export const WANTED = {
-  max: 5,
-  stealCar: 1,
-  punchPed: 1,
-  shoot: 1,
-  killCop: 2,
-  decayDelay: 14,
-  decayPerSecond: 0.12,
-  copSpeed: [0, 300, 330, 365, 400, 430],
-  copCount: [0, 1, 2, 3, 4, 5],
-  bustRadius: 30,
-  bustTime: 1.6,
+// Heat: 0 to 5 stars. Crimes add stars at once; staying clean cools them off.
+export const HEAT = {
+  top: 5,
+  forSteal: 1,
+  forAssault: 1,
+  forShot: 1,
+  forCopDown: 2,
+  coolAfter: 14,
+  coolRate: 0.12,
+  copTopSpeed: [0, 300, 330, 365, 400, 430],
+  copHowMany: [0, 1, 2, 3, 4, 5],
+  bustDist: 30,
+  bustHold: 1.6,
 };
 
-export const MONEY = {
+// Cash: what Mara starts with and what the city pays her.
+export const CASH = {
   start: 250,
-  taxiFare: 45,
-  cashPickup: 60,
-  missionReward: [0, 400, 600, 900, 1200, 2500],
+  fareBase: 45,
+  streetCash: 60,
+  bagCash: 300,
+  missionPay: [0, 400, 600, 900, 1200, 2500],
 };
 
 export const SAVE_KEY = 'solmar-save-v1';
-export const BEST_KEY = 'solmar-best-v1';
 
-// Screens
 export const SCREEN_TITLE = 'title';
 export const SCREEN_PLAY = 'play';
-export const SCREEN_PAUSED = 'paused';
-export const SCREEN_OVER = 'over';
-export const SCREEN_WIN = 'win';
+export const SCREEN_PAUSE = 'paused';
+export const SCREEN_BUSTED = 'over';
+export const SCREEN_WON = 'win';
 
 export const RANKS = ['Street Kid', 'Wheelman', 'Hustler', 'Shot Caller', 'Kingpin of Solmar'];
