@@ -1,4 +1,4 @@
-/* SOLMAR — page chrome around the game canvas. The game itself paints everything. */
+/* SOLMAR — the page chrome around the game canvas. The game paints everything itself. */
 * { box-sizing: border-box; }
 html, body { margin: 0; padding: 0; background: #14101c; }
 body {
@@ -21,4 +21,9 @@ body {
   margin: 8px 4px 0;
   font-size: 14px;
   color: #b9b3a4;
+}
+#hint {
+  margin: 2px 4px 0;
+  font-size: 12px;
+  color: #7d7768;
 }
